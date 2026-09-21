@@ -12,6 +12,9 @@ dynamic = ["dependencies"]
 [project.scripts]
 rag = "webrag.cli:main"
 
+[project.gui-scripts]
+webrag-desktop = "webrag.desktop:main"
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 

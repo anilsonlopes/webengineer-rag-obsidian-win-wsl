@@ -14,7 +14,8 @@ from .store import load_index
 def _retriever(cfg: Config):
     from .retriever import Retriever
 
-    return Retriever(load_index(cfg.index_dir), cfg.embed_model)
+    index = load_index(cfg.index_dir)
+    return Retriever(index, index.manifest["embed_model"])
 
 
 def cmd_index(cfg: Config, args) -> int:
@@ -103,11 +104,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     args = build_parser().parse_args(argv)
-    cfg = Config.load()
     try:
+        cfg = Config.load()
         return args.func(cfg, args)
-    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError) as exc:
         print(f"Erro: {exc}", file=sys.stderr)
         return 1
 

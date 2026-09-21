@@ -7,6 +7,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from .progress import checkpoint, report
+
 SKIP_DIRS = {".obsidian", ".trash", ".git", "node_modules", "__pycache__"}
 FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
@@ -51,19 +53,22 @@ def _read_pdf(path: Path) -> str:
     return "\n\n".join(pages)
 
 
-def load_documents(source_dir: Path) -> list[Document]:
+def load_documents(source_dir: Path, *, progress=None, cancel=None) -> list[Document]:
     """Percorre o diretório e devolve todos os documentos legíveis."""
     if not source_dir.is_dir():
         raise FileNotFoundError(f"Diretório de origem não encontrado: {source_dir}")
 
     docs: list[Document] = []
-    for path in sorted(source_dir.rglob("*")):
+    for path in source_dir.rglob("*"):
+        checkpoint(cancel)
         if not path.is_file():
             continue
         if any(part in SKIP_DIRS for part in path.relative_to(source_dir).parts):
             continue
 
         suffix = path.suffix.lower()
+        if suffix in (".md", ".pdf"):
+            report(progress, "reading", f"Lendo: {path.name} ({len(docs)} documentos carregados)")
         if suffix == ".md":
             text, kind = _read_markdown(path), "md"
         elif suffix == ".pdf":
@@ -88,4 +93,4 @@ def load_documents(source_dir: Path) -> list[Document]:
                 sha1=_sha1(text),
             )
         )
-    return docs
+    return sorted(docs, key=lambda doc: doc.rel_path)

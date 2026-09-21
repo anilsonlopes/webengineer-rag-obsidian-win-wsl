@@ -6,7 +6,6 @@ Registre no Claude Code com:
 
 from __future__ import annotations
 
-from functools import lru_cache
 
 try:  # mcp >= 2.0
     from mcp.server.mcpserver import MCPServer as _Server
@@ -15,7 +14,7 @@ except ModuleNotFoundError:  # mcp 1.x, onde a classe se chamava FastMCP
 
 from . import __version__
 from .config import Config
-from .store import load_index
+from .index_access import IndexAccess
 
 mcp = _Server(
     "web-engineer-rag",
@@ -28,12 +27,8 @@ mcp = _Server(
 )
 
 
-@lru_cache(maxsize=1)
-def _retriever():
-    from .retriever import Retriever
-
-    cfg = Config.load()
-    return Retriever(load_index(cfg.index_dir), cfg.embed_model)
+_access = IndexAccess(Config.load)
+_retriever = _access.get
 
 
 @mcp.tool()

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -10,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from .config import Config
-from .store import load_index
+from .index_access import IndexAccess
 
 WEB_DIR = Path(__file__).parent / "web"
 
@@ -21,14 +20,11 @@ class SearchRequest(BaseModel):
     pillar: str | None = None
 
 
-def create_app(cfg: Config) -> FastAPI:
+def create_app(cfg: Config, *, config_provider=None) -> FastAPI:
     app = FastAPI(title="Web Engineer RAG", version="0.1.0")
 
-    @lru_cache(maxsize=1)
-    def retriever():
-        from .retriever import Retriever
-
-        return Retriever(load_index(cfg.index_dir), cfg.embed_model)
+    access = IndexAccess(config_provider or (lambda: cfg))
+    retriever = access.get
 
     @app.get("/", response_class=HTMLResponse)
     def home() -> str:

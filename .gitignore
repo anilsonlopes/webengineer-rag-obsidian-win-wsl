@@ -3,3 +3,9 @@ data/index/
 __pycache__/
 *.pyc
 .env
+
+.build-tools/
+.venv-build/
+build/
+dist/
+*.egg-info/

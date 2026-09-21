@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Engineer · RAG local</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfaf8; --panel: #ffffff; --border: #e4e1db; --text: #1d1b18;
+    --muted: #6f6a62; --accent: #b25a3a; --accent-soft: #f4ece7; --code: #f3f1ed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a; --panel: #1f1e23; --border: #33313a; --text: #eceaf0;
+      --muted: #9e99a8; --accent: #e0805c; --accent-soft: #2c2229; --code: #26252b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.6 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+  header h1 { margin: 0 0 4px; font-size: 1.5rem; letter-spacing: -0.02em; }
+  header p { margin: 0 0 24px; color: var(--muted); font-size: 0.9rem; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type=text], select {
+    font: inherit; padding: 11px 13px; border: 1px solid var(--border);
+    border-radius: 9px; background: var(--panel); color: var(--text);
+  }
+  input[type=text] { flex: 1 1 320px; }
+  button {
+    font: inherit; font-weight: 600; padding: 11px 18px; border: 0; border-radius: 9px;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button:disabled { opacity: 0.55; cursor: progress; }
+  .opts { display: flex; gap: 16px; align-items: center; margin-top: 12px;
+          font-size: 0.85rem; color: var(--muted); flex-wrap: wrap; }
+  .opts label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  #status { margin-top: 20px; color: var(--muted); font-size: 0.88rem; min-height: 1.2em; }
+  .hit { margin-top: 18px; padding: 16px 18px; background: var(--panel);
+         border: 1px solid var(--border); border-radius: 10px; }
+  .hit .loc { font-size: 0.8rem; color: var(--muted); display: flex;
+              justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .hit .loc strong { color: var(--text); font-weight: 600; }
+  .hit pre { margin: 0; white-space: pre-wrap; word-wrap: break-word;
+             font: inherit; }
+  footer { margin-top: 40px; font-size: 0.8rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Web Engineer · RAG local</h1>
+    <p id="meta">carregando índice…</p>
+  </header>
+
+  <form id="form">
+    <input type="text" id="q" placeholder="Ex.: como medir Core Web Vitals?" autofocus>
+    <select id="pillar"><option value="">Todos os pilares</option></select>
+    <button type="submit" id="go">Buscar</button>
+  </form>
+  <div class="opts">
+    <label>trechos: <input type="number" id="k" value="6" min="1" max="20" style="width:56px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text)"></label>
+  </div>
+
+  <div id="status"></div>
+  <div id="out"></div>
+
+  <footer>Busca 100% local · embeddings gerados na própria máquina, nenhum conteúdo sai daqui.</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+fetch('/api/stats').then(r => r.json()).then(s => {
+  $('meta').textContent =
+    `${s.documents} documentos · ${s.chunks} chunks · ${s.embed_model} (${s.dimensions}d)`;
+  (s.pillars || []).forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    $('pillar').appendChild(opt);
+  });
+}).catch(() => { $('meta').textContent = 'Índice não encontrado — rode `rag index`.'; });
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const question = $('q').value.trim();
+  if (!question) return;
+
+  $('go').disabled = true;
+  $('out').innerHTML = '';
+  $('status').textContent = 'Buscando…';
+
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        top_k: Number($('k').value) || 6,
+        pillar: $('pillar').value || null,
+      }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    $('status').textContent = data.hits.length
+      ? `${data.hits.length} trecho(s)`
+      : 'Nenhum trecho relevante encontrado.';
+
+    data.hits.forEach((hit, i) => {
+      const el = document.createElement('div');
+      el.className = 'hit';
+      const loc = document.createElement('div');
+      loc.className = 'loc';
+      const left = document.createElement('span');
+      left.innerHTML = `<strong>[${i + 1}]</strong> `;
+      left.append(hit.location);
+      const right = document.createElement('span');
+      right.textContent = hit.score.toFixed(4);
+      loc.append(left, right);
+      const pre = document.createElement('pre');
+      pre.textContent = hit.text;
+      el.append(loc, pre);
+      $('out').appendChild(el);
+    });
+  } catch (err) {
+    $('status').textContent = 'Erro: ' + err.message;
+  } finally {
+    $('go').disabled = false;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+[console_scripts]
+rag = webrag.cli:main

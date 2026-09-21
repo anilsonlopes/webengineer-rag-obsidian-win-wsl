@@ -1,0 +1,16 @@
+# Núcleo do RAG (embeddings 100% locais)
+sentence-transformers>=3.0.0
+numpy>=1.26.0
+
+# Leitura de conteúdo
+pypdf>=4.2.0
+
+# API HTTP + UI local
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Servidor MCP para o Claude Code
+mcp>=2.0.0  # o código também suporta o mcp 1.x (FastMCP)
+
+
+python-dotenv>=1.0.0

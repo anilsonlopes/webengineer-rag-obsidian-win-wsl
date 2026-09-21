@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webrag"
+version = "0.1.0"
+description = "RAG local sobre o vault Web Engineer (ContextDirectory)"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[project.scripts]
+rag = "webrag.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+webrag = ["web/*.html"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }

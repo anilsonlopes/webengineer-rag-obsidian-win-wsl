@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: webrag
+Version: 0.1.0
+Summary: RAG local sobre o vault Web Engineer (ContextDirectory)
+Requires-Python: >=3.10
+Requires-Dist: sentence-transformers>=3.0.0
+Requires-Dist: numpy>=1.26.0
+Requires-Dist: pypdf>=4.2.0
+Requires-Dist: fastapi>=0.115.0
+Requires-Dist: uvicorn[standard]>=0.30.0
+Requires-Dist: mcp>=2.0.0
+Requires-Dist: python-dotenv>=1.0.0
